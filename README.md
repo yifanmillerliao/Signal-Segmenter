@@ -1,143 +1,125 @@
-Signal Segmenter (3-Channel Peak-Aligned GUI)
+Signal Segmenter (3-Channel, Peak-Aligned)
 
-Signal Segmenter is a desktop application for segmenting electrical time-series signals from three channels (CH1–CH3).
-It loads a .txt data file, automatically detects peaks in CH1, and extracts short, user-defined time windows around each peak — saving each as both .txt data files and .jpg visual plots.
+A lightweight desktop app for segmenting electrical time-series from three channels (CH1–CH3). It loads a .txt export, automatically detects peaks on CH1, lets you choose a half-window a (seconds), and saves segments around each peak as both tab-separated text files and quick plot images. Time within each segment is rebased to start at t = 0.
 
-This project combines scientific signal processing with a user-friendly Python GUI, and was developed as part of an undergraduate research toolkit at the University of Chicago.
+Built with a clean separation between the core signal logic and a Tkinter + Matplotlib GUI. Suitable for research workflows and reproducible analysis.
 
-✨ Features
+Features
 
-3-channel visualization: CH1, CH2, CH3 vs time.
+3-channel input: CH1, CH2, CH3 vs time.
 
-Automatic peak detection using scipy.signal.find_peaks.
+Automatic peak detection on CH1 (SciPy find_peaks with adaptive default parameters).
 
-Configurable segmentation window [t_peak - a, t_peak + a].
+Windowed segmentation: for each detected peak, saves [t_peak − a, t_peak + a].
 
-Time rebasing: each output segment starts at t = 0.
+Time rebasing per segment (starts at t = 0); optional “peak at 0” supported in core API.
 
 Batch export:
 
-TXT: <inputFileStem>segmen###.txt
+TXT: <inputFileStem>segmen###.txt (tab-separated; columns: time (s), CH1 (V), CH2 (V), CH3 (V)).
 
-JPG: <inputFileStem>segmen###.jpg
+Images: <inputFileStem>segmen###.jpg (overlay plot of CH1–CH3 vs time).
 
-GUI visualization:
+GUI preview: left panel shows the full recording; right panel previews Segment #1 after processing.
 
-Left panel: full original signal.
+Robust input parsing: ignores the first header line and reads the first four numeric columns by position.
 
-Right panel: first extracted segment.
+Optional one-file Windows executable via PyInstaller.
 
-Cross-platform compatibility (Windows executable via PyInstaller).
-
-🧠 Overview
-
-This app was designed for analyzing electrical signal recordings — for instance, from soft electronics, sensors, or stretchable circuit experiments.
-It provides an automated way to extract and visualize repeated transient responses in multi-channel time-series data.
-
-🧩 Project Structure
-signal-segmenter/
-├─ segmentation.py        # Core segmentation logic (I/O, peak detection, exports)
-├─ gui_app.py             # Tkinter GUI with Matplotlib visualization
-├─ test_segment.py        # Minimal test of core functions (no GUI)
-├─ requirements.txt
-└─ README.md
+Project Structure
+segmentation.py       # Core: I/O, peak detection, segmentation, exports
+gui_app.py            # Tkinter GUI: two plots + controls
+test_segment.py       # Quick smoke test for the core (no GUI)
+requirements.txt
+README.md
 
 
-The program separates signal logic and user interface for clarity and maintainability:
+The core (segmentation.py) exposes pure functions (no prints/UI) and returns data or raises exceptions.
 
-segmentation.py: data handling, peak detection, segmentation.
+The GUI (gui_app.py) handles user interaction and plotting, importing the core as a library.
 
-gui_app.py: event-driven GUI that imports and calls the core functions.
+Input Data Format
 
-📄 Input Data Format
+File type: .txt (required).
 
-Expected file type: .txt (required)
+The first line is treated as a header and ignored.
 
-Column	Meaning	Notes
-1	time (s)	time points
-2	CH1 (V)	channel 1 (used for peak detection)
-3	CH2 (V)	channel 2
-4	CH3 (V)	channel 3
+From the second line onward, the first four numeric columns are interpreted as:
 
-The first line (header) is ignored.
+time (s)    CH1 (V)    CH2 (V)    CH3 (V)
 
-The program reads the first four numeric columns starting from the second line.
 
-Supports both whitespace and comma separators.
+Delimiters: whitespace or commas are both accepted.
 
-Example:
+Data are sorted by time internally.
 
-time (s) CH1 (V) CH2 (V) CH3 (V)
-0.00 2.59 0.004 0.0007
-0.01 2.59 0.002 0.0036
-...
+Outputs
 
-📤 Output Files
+For each detected peak i:
 
-For each detected peak, the app saves:
+TXT (tab-separated):
+<inputFileStem>segmen<i:03d>.txt
+Columns: time (s), CH1 (V), CH2 (V), CH3 (V) with time rebased to start at 0 within the segment.
 
-Data file:
-<inputFileStem>segmen001.txt, <inputFileStem>segmen002.txt, …
-→ tab-separated file with time (s), CH1 (V), CH2 (V), CH3 (V)
-→ time starts at 0.0 for each segment
+Image (overlay plot):
+<inputFileStem>segmen<i:03d>.jpg
+Compact visualization of CH1–CH3 vs rebased time for the same segment.
 
-Image file:
-<inputFileStem>segmen001.jpg, <inputFileStem>segmen002.jpg, …
-→ plot of CH1–CH3 vs time for each segment
+Optional summary (if enabled):
+peak_times_summary.txt with peak indices, absolute times, and CH1 peak values.
 
-(Optional) Summary file:
-peak_times_summary.txt — lists all detected peak indices, times, and CH1 values.
+Quick Start (Developers)
 
-🖥️ GUI Workflow
-
-LOAD
-
-Input a .txt file path or use the file browser.
-
-The left plot shows the full signal.
-
-OUT
-
-Choose or create an output directory.
-
-TIME
-
-Enter the half-window a (in seconds) for segmentation.
-
-START
-
-Peaks are detected automatically.
-
-Segments [t_peak−a, t_peak+a] are saved as TXT + JPG files.
-
-The right panel shows Segment #1.
-
-🧪 Quick Start (Developers)
-
-Install dependencies
+Create and activate a virtual environment, then install dependencies:
 
 python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
 
 
-Run a test
+(Or: pip install numpy pandas scipy matplotlib pyinstaller)
+
+Smoke test the core (no GUI):
 
 python test_segment.py
 
 
-Launch GUI
+Run the GUI:
 
 python gui_app.py
 
-🧰 Build a Windows Executable (Optional)
+Using the App (GUI)
 
-If you want to distribute a standalone .exe version:
+LOAD: Paste a .txt file path or browse to select one. Left panel plots CH1–CH3 vs time.
+
+OUT: Choose or create an output folder.
+
+TIME: Enter the half-window a in seconds (e.g., 2.0) and confirm.
+
+START: The app detects peaks on CH1, saves segments [t_peak − a, t_peak + a] as TXT and JPG, and previews Segment #1 in the right panel.
+
+Notes:
+
+**Input must be a .txt file; output must be a directory.**
+
+Filenames of TXT and images match: <inputFileStem>segmen###.
+
+Methods & Design Notes
+
+Peak detection: scipy.signal.find_peaks with an adaptive default prominence (~10% of robust range based on the 95th–5th percentile difference). An optional minimum peak distance (in seconds) can be enabled in the core API.
+
+Segmentation: Filters rows within [t_peak − a, t_peak + a]. Time is rebased per segment to t = 0 (configurable in the core; “peak at 0” also supported).
+
+Parsing: Skips the header line and reads the first 4 numeric columns (time, CH1, CH2, CH3), allowing whitespace or commas as delimiters.
+
+Architecture: The core returns structured results (DataFrames, arrays, and saved file paths). The GUI manages state and validates inputs.
+
+Core API Example
 
 pyinstaller --noconfirm --onefile --windowed --name Segmenter gui_app.py
 
 
-If some libraries fail to import (e.g., SciPy, Matplotlib), use:
+If you encounter missing module/data issues (matplotlib/scipy), try:
 
 pyinstaller --noconfirm --onefile --windowed --name Segmenter ^
   --collect-submodules matplotlib --collect-data matplotlib ^
@@ -145,64 +127,38 @@ pyinstaller --noconfirm --onefile --windowed --name Segmenter ^
   gui_app.py
 
 
-Output:
-→ dist/Segmenter.exe
+The executable will be created at dist/Segmenter.exe.
 
-📐 Implementation Highlights
+What This Demonstrates (for Applications)
 
-Peak detection:
-scipy.signal.find_peaks with adaptive prominence (10% of robust amplitude range).
+Practical scientific software engineering: separation of logic and UI, robust I/O, clear validation, reproducible outputs.
 
-Segmentation logic:
-Uses [t_peak−a, t_peak+a] on CH1 timestamps, applies same window to CH2 & CH3.
+Applied signal processing: automatic peak detection, windowed segmentation, and time normalization.
 
-Rebased time axis:
-Each segment starts at 0 (configurable).
+Visualization and UX for research tools: dual-panel design with live preview and batch export.
 
-GUI design:
-Dual Matplotlib canvases + independent toolbars for zoom/pan.
+Packaging and deployment: optional single-file executable for easy distribution.
 
-Output consistency:
-Matching TXT/JPG naming per segment for clean dataset exports.
+Roadmap (Potential Enhancements)
 
-📈 Example Code (Core API)
-from segmentation import segment_all
+Segment selector in the GUI (preview any segment N).
 
-res = segment_all(
-    input_path=r"D:\data\example.txt",
-    out_dir=r"D:\data\segments_out",
-    half_window_s=2.0,
-    save_plots=True,
-    img_format="jpg",
-    time_zero="start",
-)
+UI controls for min_prominence and min_distance_seconds.
 
-print("Detected peaks:", len(res["peak_times"]))
-print("Segments saved:", len(res["saved_files"]))
+CSV/TSV toggle, custom image DPI/size.
 
-🎓 Academic Context
+Optional preprocessing (denoising, resampling).
 
-Developed by Miller Liao, undergraduate researcher in Physics and Statistics at the University of Chicago.
-This project demonstrates:
+CLI mode for headless batch runs.
 
-Practical scientific programming
+Requirements
 
-Data visualization and automation
+Python 3.10+
 
-Peak-based time-series segmentation
+numpy, pandas, scipy, matplotlib
 
-Usable software design for lab workflows
+pyinstaller (only for building the executable)
 
-🧭 Future Extensions
+Acknowledgments
 
-Add GUI segment browser (choose segment N to display)
-
-Adjustable peak detection parameters (min_prominence, min_distance)
-
-Optional CSV/TSV and PNG/DPI settings
-
-Command-line batch mode
-
-📝 License
-
-MIT License (or your chosen license).
+Developed by Miller Liao (UChicago). Thanks to the open-source Python community for the scientific stack.
